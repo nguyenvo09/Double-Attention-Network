@@ -8,7 +8,7 @@ class DoubleAttentionLayer(nn.Module):
     """
     Implementation of Double Attention Network. NIPS 2018
     """
-    def __init__(self, in_channels: int, c_m: int, c_n: int):
+    def __init__(self, in_channels: int, c_m: int, c_n: int, reconstruct = False):
         """
 
         Parameters
@@ -16,14 +16,18 @@ class DoubleAttentionLayer(nn.Module):
         in_channels
         c_m
         c_n
+        reconstruct: `bool` whether to re-construct output to have shape (B, in_channels, L, R)
         """
         super(DoubleAttentionLayer, self).__init__()
         self.c_m = c_m
         self.c_n = c_n
         self.in_channels = in_channels
+        self.reconstruct = reconstruct
         self.convA = nn.Conv2d(in_channels, c_m, kernel_size = 1)
         self.convB = nn.Conv2d(in_channels, c_n, kernel_size = 1)
         self.convV = nn.Conv2d(in_channels, c_n, kernel_size = 1)
+        if self.reconstruct:
+            self.conv_reconstruct = nn.Conv2d(c_m, in_channels, kernel_size = 1)
 
     def forward(self, x: torch.Tensor):
         """
@@ -48,6 +52,8 @@ class DoubleAttentionLayer(nn.Module):
         # step 1: feature gathering
         global_descriptors = torch.bmm(tmpA, attention_maps.permute(0, 2, 1))  # (B, c_m, c_n)
         # step 2: feature distribution
-        attention_vectors = F.softmax(attention_vectors, dim = -1)  # (B, c_n, h * w)
+        attention_vectors = F.softmax(attention_vectors, dim = 1)  # (B, c_n, h * w) attention on c_n dimension
         tmpZ = global_descriptors.matmul(attention_vectors)  # B, self.c_m, h * w
+        tmpZ = tmpZ.view(batch_size, self.c_m, h, w)
+        if self.reconstruct: tmpZ = self.conv_reconstruct(tmpZ)
         return tmpZ
