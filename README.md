@@ -5,7 +5,7 @@ It can be used as an additional block for building models. Right now, the output
 re-construct the original shape (B, c, H, W) with a single line of code in PyTorch.
 
 ## Layer architecture
-- Temporal behavior of guardians
+- Two attention steps
 ![alt text](https://github.com/nguyenvo09/Double-Attention-Network/blob/master/images/model.png)
 
 
